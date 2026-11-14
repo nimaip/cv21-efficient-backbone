@@ -1,0 +1,30 @@
+# From-scratch CIFAR-100. The paper fine-tunes an ImageNet DeiT at 224px.
+# lambda_stb and lambda_du are not stated in the paper; these are the repo defaults.
+seed: 0
+data:
+  name: cifar100
+  root: null
+  img_size: 32
+model:
+  name: edge_recvit_tiny
+  img_size: 32
+  patch_size: 4
+  embed_dim: 192
+  depth: 12
+  num_heads: 3
+  mlp_ratio: 4.0
+  drop_path: 0.1
+  use_ranker: true
+  lambda_stb: 0.01
+  lambda_du: 1.0
+train:
+  epochs: 150
+  batch_size: 128
+  num_workers: 4
+  optimizer: adamw
+  lr: 0.001
+  weight_decay: 0.05
+  warmup_epochs: 5
+  label_smoothing: 0.0
+  grad_clip: 1.0
+  amp: true

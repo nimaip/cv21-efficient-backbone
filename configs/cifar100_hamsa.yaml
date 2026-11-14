@@ -1,0 +1,26 @@
+seed: 0
+data:
+  name: cifar100
+  root: null
+  img_size: 32
+model:
+  name: hamsa_tiny
+  img_size: 32
+  patch_size: 4
+  embed_dim: 192
+  depth: 8
+  mlp_ratio: 4.0
+  expand: 1
+  drop_path: 0.05
+  sigma: 0.02
+train:
+  epochs: 150
+  batch_size: 128
+  num_workers: 4
+  optimizer: adamw
+  lr: 0.001
+  weight_decay: 0.05
+  warmup_epochs: 5
+  label_smoothing: 0.1
+  grad_clip: 1.0
+  amp: true
