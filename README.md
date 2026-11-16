@@ -13,7 +13,7 @@ Two 2026 papers cut that cost in different ways:
 * **Edge-RecViT** (Li et al., CVPR 2026) keeps the transformer. An MLP ranker, run before the transformer, assigns each patch a depth. Structurally rich tokens are meant to be refined longer; simple tokens leave early. The class token always runs the full depth. The network itself is only three transformer blocks — a head, one shared middle block, and a tail — and the middle block is reapplied until a token's depth is used up. Parameter count stays near three layers. Compute is supposed to follow the depth map.
 * **HAMSA** (Patro and Agneeswaran, CVPR 2026 Findings) leaves attention. Vision state-space models such as Vim and VMamba turn a grid into a sequence by scanning it (rows, columns, sometimes several directions) because a classic state-space model reads in order. HAMSA uses the fact that a state-space update is a convolution: `y = K ∗ u` is a product in the Fourier domain, `y = F⁻¹(F(u) ⊙ F(K))`, which an FFT computes in `O(L log L)`. The kernel is one complex vector per channel, initialized from a small Gaussian, with no `(A, B, C)` matrices and no zero-order-hold discretization. SpectralPulseNet and a Spectral Adaptive Gating Unit then reweight frequency bins from the input magnitude.
 
-The training target is to beat the DeiT-Tiny and ResNet-18 baselines on CIFAR-100 top-1 against parameter count and MACs. No run has been trained yet.
+The training target is to beat the DeiT-Tiny and ResNet-18 baselines on CIFAR-100 top-1 against parameter count and MACs. Four from-scratch runs finished on 2026-11-15. HAMSA beat DeiT-Tiny. ResNet-18 is still the highest raw accuracy. The epoch-149 lines are in `results/cifar100.json`, and the write-up is in `MODEL_CARD.md`.
 
 Papers:
 
@@ -24,14 +24,14 @@ Papers:
 
 ## What this code does
 
-| Model | Config | Params | Dense MACs | FLOPs (2×MAC) |
-|---|---|---:|---:|---:|
-| `resnet18_cifar` | `configs/cifar100_resnet18.yaml` | 11.22M | 0.56G | 1.11G |
-| `deit_tiny` | `configs/cifar100_deit_tiny.yaml` | 5.38M | 0.37G | 0.73G |
-| `edge_recvit_tiny` | `configs/cifar100_edge_recvit.yaml` | 1.45M | 0.37G | 0.73G |
-| `hamsa_tiny` | `configs/cifar100_hamsa.yaml` | 3.93M | 0.24G | 0.47G |
+| Model | Config | Params | Dense MACs | FLOPs (2×MAC) | CIFAR-100 top-1 |
+|---|---|---:|---:|---:|---:|
+| `resnet18_cifar` | `configs/cifar100_resnet18.yaml` | 11.22M | 0.56G | 1.11G | 79.07% |
+| `hamsa_tiny` | `configs/cifar100_hamsa.yaml` | 3.93M | 0.24G | 0.47G | 69.24% |
+| `deit_tiny` | `configs/cifar100_deit_tiny.yaml` | 5.38M | 0.37G | 0.73G | 63.31% |
+| `edge_recvit_tiny` | `configs/cifar100_edge_recvit.yaml` | 1.45M | 0.37G | 0.73G | 55.63% |
 
-Counts are from one untrained 32×32 forward (`python -m efficient_backbone.profile`). MACs are hook counts on conv and linear layers, plus the two attention matmuls. HAMSA also adds a rough FFT estimate. FLOPs use the papers' convention of 1 MAC = 2 FLOPs. CIFAR-100 top-1 is empty until the first real training job.
+Parameter and MAC counts are from one untrained 32×32 forward (`python -m efficient_backbone.profile`). MACs are hook counts on conv and linear layers, plus the two attention matmuls. HAMSA also adds a rough FFT estimate. FLOPs use the papers' convention of 1 MAC = 2 FLOPs. Top-1 is the epoch-149 test accuracy from the ICE runs above. The bar chart is `results/cifar100_val_acc.svg`.
 
 Edge-RecViT's parameter count is the part the shared block actually delivers (about 27% of DeiT-Tiny here, in line with a 3-layer stack against a 12-layer DeiT). Its MAC count matches DeiT because exited tokens are masked inside a dense attention call. The training log records `mean_depth` and `depth_hist`. Those are the quantities a later sparse kernel would turn into a real FLOP cut. At initialization the depth map is noise.
 
@@ -100,7 +100,7 @@ Each run writes `checkpoints/<model>-<timestamp>/{config.yaml,metrics.jsonl,last
 
 ## ICE
 
-On 2026-11-14, `cv21` was Python 3.11.18 and `import torch` failed. Install PyTorch into that env before submitting a job. The cluster also has `module load pytorch/25.10`, which is an Apptainer image with its own Python, separate from `cv21`. This job script uses `cv21`. From a login node, on the GT VPN:
+`cv21` is Python 3.11.18 with `torch==2.14.1+cu126` and `torchvision==0.29.1+cu126`. That CUDA 12.6 build includes V100 (`sm_70`). A default CUDA 13 wheel does not run on these GPUs, and PyTorch 2.15 no longer publishes a `cu126` wheel. The cluster also has `module load pytorch/25.10`, which is an Apptainer image with its own Python, separate from `cv21`. This job script uses `cv21`. From a login node, on the GT VPN:
 
 ```bash
 module load anaconda3
@@ -138,7 +138,10 @@ rsync -a --progress \
 
 ## Known limits
 
-* No trained accuracy yet. The table above is size and a single forward, not a leaderboard.
+* HAMSA beat DeiT-Tiny on this one seed and did not beat ResNet-18 on raw accuracy. Edge-RecViT finished below DeiT-Tiny.
+* The table quotes epoch 149. `best.pt` is chosen by the best validation epoch, which can differ from the last epoch.
 * Edge-RecViT attention is masked but dense, so the wall-clock and the hook MAC count do not shrink when tokens exit.
+* HAMSA's spectral block runs in float32. Autocast produced a complex half-precision activation that could not multiply the complex float32 weights; job 7095307 failed on that, and job 7096004 is the rerun.
 * HAMSA's `L×L` spectral maps are cheap at CIFAR (`L = 64`) and would dominate if this block were dropped onto a long token sequence without sharing them.
 * Depth decisions use `argmax`, which does not carry a gradient. The ranker learns through the stability loss, the uniformity loss, and the confidence weight on the logits.
+* These scores are from-scratch CIFAR-100. They are not comparable to the papers' ImageNet or 224×224 fine-tune tables.
