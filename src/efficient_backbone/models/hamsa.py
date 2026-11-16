@@ -60,17 +60,21 @@ class SpectralAdaptiveStateSpace(nn.Module):
             raise ValueError(
                 f"expected sequence {(self.seq_len, self.channels)}, got {(length, channels)}"
             )
-        spectrum = torch.fft.fft(sequence, dim=1).permute(0, 2, 1)
-        linear = torch.complex(self.w1_re, self.w1_im)
-        mixed = spectrum @ linear
-        sagu_gate = torch.sigmoid(spectrum.abs() @ self.w2)
-        spectrum = mixed * sagu_gate
-        pulse_gate = torch.sigmoid(spectrum.abs() @ self.wg + self.bg)
-        spectrum = spectrum * pulse_gate
-        kernel = torch.complex(self.psi_re, self.psi_im)
-        kernel_spectrum = torch.fft.fft(kernel, dim=-1)
-        spectrum = spectrum * kernel_spectrum
-        restored = torch.fft.ifft(spectrum.permute(0, 2, 1), dim=1).real
+        # Autocast turns activations into float16. Complex float16 cannot
+        # multiply with the float32 kernel, so this block stays in float32.
+        with torch.autocast(device_type=sequence.device.type, enabled=False):
+            sequence = sequence.float()
+            spectrum = torch.fft.fft(sequence, dim=1).permute(0, 2, 1)
+            linear = torch.complex(self.w1_re, self.w1_im)
+            mixed = spectrum @ linear
+            sagu_gate = torch.sigmoid(spectrum.abs() @ self.w2)
+            spectrum = mixed * sagu_gate
+            pulse_gate = torch.sigmoid(spectrum.abs() @ self.wg + self.bg)
+            spectrum = spectrum * pulse_gate
+            kernel = torch.complex(self.psi_re, self.psi_im)
+            kernel_spectrum = torch.fft.fft(kernel, dim=-1)
+            spectrum = spectrum * kernel_spectrum
+            restored = torch.fft.ifft(spectrum.permute(0, 2, 1), dim=1).real
         # Engineering estimate only: about 5 L log2(L) flops per real FFT.
         self.last_fft_macs += int(3 * 5 * length * math.log2(length) * channels * batch)
         return restored

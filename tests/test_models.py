@@ -80,6 +80,16 @@ class ModelTests(unittest.TestCase):
         self.assertEqual(result.regularizers, {})
         self.assertTrue(torch.equal(result.debug["depth"], torch.full_like(result.debug["depth"], 4)))
 
+    def test_hamsa_forward_under_autocast(self) -> None:
+        model = build_model({"name": "hamsa_tiny", "depth": 2}, num_classes=100)
+        model.train()
+        images = torch.rand(2, 3, 32, 32)
+        targets = torch.randint(0, 100, (2,))
+        with torch.autocast(device_type="cpu", dtype=torch.bfloat16):
+            loss = model(images).loss(targets)
+        self.assertTrue(torch.isfinite(loss))
+        loss.backward()
+
     def test_resnet_uses_cifar_stem(self) -> None:
         model = build_model({"name": "resnet18_cifar"}, num_classes=100)
         self.assertEqual(model.conv1.kernel_size, (3, 3))
