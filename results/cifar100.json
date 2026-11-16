@@ -1,0 +1,94 @@
+{
+  "dataset": "CIFAR-100",
+  "split": "test",
+  "epochs": 150,
+  "seed": 0,
+  "metric": "top-1 accuracy on the epoch-149 line of metrics.jsonl",
+  "hardware": "one Tesla V100-PCIE-16GB, account coc, QoS coc-ice, partition coc-gpu",
+  "runs": [
+    {
+      "model": "resnet18_cifar",
+      "job_id": "7094046",
+      "state": "COMPLETED",
+      "elapsed": "00:50:27",
+      "params": 11220132,
+      "dense_macs": 0.56e9,
+      "run_dir": "/home/hice1/nponna3/scratch/cv21/checkpoints/p01/resnet18_cifar-20261115-172818",
+      "final": {
+        "epoch": 149,
+        "lr": 1.0965826257725021e-05,
+        "train_loss": 0.9015520840119093,
+        "train_acc": 97.7363782051282,
+        "val_loss": 0.9353626566886902,
+        "val_acc": 79.07
+      }
+    },
+    {
+      "model": "deit_tiny",
+      "job_id": "7095305",
+      "state": "COMPLETED",
+      "elapsed": "00:47:31",
+      "params": 5380132,
+      "dense_macs": 0.37e9,
+      "run_dir": "/home/hice1/nponna3/scratch/cv21/checkpoints/p01/deit_tiny-20261115-175700",
+      "final": {
+        "epoch": 149,
+        "lr": 1.173509907579362e-07,
+        "train_loss": 0.9200125752351223,
+        "train_acc": 96.37419871794872,
+        "val_loss": 1.6992870058059693,
+        "val_acc": 63.31
+      }
+    },
+    {
+      "model": "edge_recvit_tiny",
+      "job_id": "7095306",
+      "state": "COMPLETED",
+      "elapsed": "00:44:28",
+      "params": 1454692,
+      "dense_macs": 0.37e9,
+      "run_dir": "/home/hice1/nponna3/scratch/cv21/checkpoints/p01/edge_recvit_tiny-20261115-175700",
+      "final": {
+        "epoch": 149,
+        "lr": 1.173509907579362e-07,
+        "train_loss": 0.6536301888716527,
+        "train_acc": 84.01642628205128,
+        "val_loss": 2.1905215692520144,
+        "val_acc": 55.63,
+        "mean_depth": 6.536005421173878,
+        "depth_hist": [
+          0.0849887952208519,
+          0.07997671514749527,
+          0.08003806322813034,
+          0.08261217921972275,
+          0.0868808850646019,
+          0.08344538509845734,
+          0.08074074983596802,
+          0.08396559208631516,
+          0.08146002143621445,
+          0.08346354216337204,
+          0.08839894086122513,
+          0.08402913063764572
+        ]
+      }
+    },
+    {
+      "model": "hamsa_tiny",
+      "job_id": "7096004",
+      "state": "COMPLETED",
+      "elapsed": "00:46:02",
+      "params": 3928484,
+      "dense_macs": 0.24e9,
+      "run_dir": "/home/hice1/nponna3/scratch/cv21/checkpoints/p01/hamsa_tiny-20261115-183919",
+      "notes": "Job 7095307 failed in 25 seconds on a complex float16 matmul. This run is the resubmit after the spectral block was forced to float32.",
+      "final": {
+        "epoch": 149,
+        "lr": 1.173509907579362e-07,
+        "train_loss": 1.0011229443244445,
+        "train_acc": 96.04767628205128,
+        "val_loss": 1.3682540893554687,
+        "val_acc": 69.24
+      }
+    }
+  ]
+}
